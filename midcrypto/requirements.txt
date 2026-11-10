@@ -1,0 +1,5 @@
+cryptography
+qrcode[pil]
+opencv-python
+pillow
+matplotlib
