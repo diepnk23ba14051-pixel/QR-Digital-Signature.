@@ -1,0 +1,36 @@
+{
+  "created_utc": "2026-11-14T14:29:57.366002+00:00",
+  "operating_system": "Windows-11-10.0.26300-SP0",
+  "python": "3.14.2",
+  "cryptography": "50.0.2",
+  "opencv": "4.13.0",
+  "sample_count": 100,
+  "certificate_fixture_count": 1,
+  "fixture": {
+    "name": "Decoder Benchmark",
+    "cert_id": "QR-DECODER-TEST",
+    "issue_date": "2026-11-14"
+  },
+  "signatures": "one fresh RSA-PSS signature per image; PSS salt is randomized",
+  "physical_or_synthetic": "software-generated PNGs; no resize, blur, rotation, noise, or camera capture",
+  "qr_version": [
+    17
+  ],
+  "dimensions_px": [
+    744,
+    744
+  ],
+  "error_correction": "M",
+  "timing_repeats_per_image_and_method": 3,
+  "warmup": "one unmeasured call to each method on the first image",
+  "baseline": "PNG decode with cv2.imdecode plus cv2.QRCodeDetector().detectAndDecode",
+  "pipeline": "midcrypto.qr_utils.decode_qr_image (PNG decode, detector cascade, preprocessing fallbacks)",
+  "success_counted_from": "first timed pass per image; decode outcome is deterministic for a fixed image and software build",
+  "baseline_successes": 80,
+  "baseline_failures": 20,
+  "baseline_mean_ms": 77.711,
+  "pipeline_successes": 100,
+  "pipeline_failures": 0,
+  "pipeline_mean_ms": 98.5,
+  "timing_note": "Mean over all timed calls; no outlier removal. Decode time only, excluding QR generation and signature verification."
+}

@@ -1,0 +1,47 @@
+================================================================================
+        TEST SUITE & BENCHMARK: QR-BASED RSA-PSS CERTIFICATE VERIFICATION      
+================================================================================
+Platform:     Windows-11-10.0.26300-SP0
+Python:       3.14.2 (64bit)
+Cryptography: 50.0.2
+OpenCV:       4.13.0
+--------------------------------------------------------------------------------
+
+=== 1. GENERATE SAMPLE KEY PAIR (RSA-2048) ===
+[+] Saved sample keys to sample_keys/
+
+=== 2. RUN 5 SECURITY TEST CASES ===
+[TC-01] Valid QR and authentic signature      -> PASS (Result: Valid Signature)
+[TC-02] Tampered holder name after signing    -> PASS (Result: Invalid Signature)
+[TC-03] Altered Base64 signature bytes        -> PASS (Result: Invalid Signature)
+[TC-04] Mismatched unauthorized public key    -> PASS (Result: Invalid Signature)
+[TC-05] Corrupted image stream / non-QR media -> PASS (Result: Error: Cannot decode QR code)
+
+=== 3. STRESS TEST (100 ITERATIONS OF RSA-2048 QR GENERATION & DECODE) ===
+[STRESS] Decode & verification success rate: 100/100 (100%) in 26.80s
+[STRESS] Status: PASS
+
+=== 4. PROVING TEXTBOOK RSA WEAKNESS vs RSA-PSS ===
+Textbook RSA multiplicative forgery (m1=105, m2=200 -> m3=21000):
+Forged valid = True -> PASS (Weakness successfully reproduced)
+
+=== 5. PERFORMANCE BENCHMARK (AVERAGED OVER 30 RUNS) ===
+RSA-1024: Sign=13.093 ms | Verify=0.032 ms | Raw=316B (QR v13) | Zlib=298B (QR v13) | Reduction: 5.70%
+RSA-2048: Sign=69.990 ms | Verify=0.163 ms | Raw=488B (QR v17) | Zlib=470B (QR v17) | Reduction: 3.69%
+RSA-3072: Sign=127.758 ms | Verify=0.064 ms | Raw=656B (QR v20) | Zlib=642B (QR v20) | Reduction: 2.13%
+
+[+] Saved comparison chart to: sample_qrs/benchmark_chart.png
+
+================================================================================
+                        TEST SUITE EXECUTION SUMMARY                            
+================================================================================
+ [PASS]  TC-01: Valid QR & Signature
+ [PASS]  TC-02: Tampered Data Detection
+ [PASS]  TC-03: Tampered Signature Detection
+ [PASS]  TC-04: Mismatched Public Key Rejection
+ [PASS]  TC-05: Corrupted Media Error Handling
+ [PASS]  STRESS-100: 100-Run Decode & Verify
+ [PASS]  DEMO: Textbook RSA Multiplicative Forgery
+--------------------------------------------------------------------------------
+OVERALL STATUS: ALL TESTS PASSED SUCCESSFULLY (Exit Code: 0)
+================================================================================

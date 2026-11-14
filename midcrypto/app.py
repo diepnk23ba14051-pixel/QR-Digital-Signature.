@@ -36,8 +36,8 @@ def load_key(path):
 
 
 def menu_generate_keys():
-    print("\n--- 1. TAO CAP KHOA RSA ---")
-    bits_str = input("Nhap do dai khoa (1024 / 2048 / 3072) [mac dinh 2048]: ").strip()
+    print("\n--- 1. GENERATE RSA KEY PAIR ---")
+    bits_str = input("Enter key size in bits (1024 / 2048 / 3072) [default: 2048]: ").strip()
     bits = int(bits_str) if bits_str in ["1024", "2048", "3072"] else 2048
 
     t0 = time.perf_counter()
@@ -49,20 +49,20 @@ def menu_generate_keys():
     with open(PUB_KEY_PATH, "w", encoding="utf-8") as f:
         f.write(pub)
 
-    print(f"[+] Da tao cap khoa RSA-{bits} thanh cong trong {dt:.2f} ms")
-    print(f"[+] Private key luu tai: {PRIV_KEY_PATH}")
-    print(f"[+] Public key luu tai : {PUB_KEY_PATH}")
+    print(f"[+] Successfully generated RSA-{bits} key pair in {dt:.2f} ms")
+    print(f"[+] Private key saved to: {PRIV_KEY_PATH}")
+    print(f"[+] Public key saved to : {PUB_KEY_PATH}")
 
 
 def menu_issue_certificate():
-    print("\n--- 2. NHAP CHUNG NHAN, KY SO RSA-PSS VA TAO MA QR ---")
-    name = input("Nhap ho va ten [mac dinh: Nguyen Van A]: ").strip() or "Nguyen Van A"
-    cert_id = input("Nhap ma chung nhan [mac dinh: CERT-2026-001]: ").strip() or "CERT-2026-001"
-    issue_date = input(f"Nhap ngay cap [mac dinh: {date.today()}]: ").strip() or str(date.today())
-    comp_ans = input("Su dung che do nen du lieu (y/n) [mac dinh: n]: ").strip().lower()
+    print("\n--- 2. ISSUE CERTIFICATE, SIGN WITH RSA-PSS, AND GENERATE QR CODE ---")
+    name = input("Enter certificate holder name [default: Alice Smith]: ").strip() or "Alice Smith"
+    cert_id = input("Enter certificate ID [default: CERT-2026-001]: ").strip() or "CERT-2026-001"
+    issue_date = input(f"Enter issue date [default: {date.today()}]: ").strip() or str(date.today())
+    comp_ans = input("Use compact payload compression? (y/n) [default: n]: ").strip().lower()
     use_comp = (comp_ans == "y")
 
-    out_file = input("Ten file anh QR xuat ra [mac dinh: sample_qrs/qr_custom.png]: ").strip()
+    out_file = input("Output QR image path [default: sample_qrs/qr_custom.png]: ").strip()
     if not out_file:
         out_file = "sample_qrs/qr_custom.png"
 
@@ -74,49 +74,49 @@ def menu_issue_certificate():
 
     priv_pem = load_key(PRIV_KEY_PATH)
 
-    # Buoc 1: Chuan hoa du lieu JSON
+    # Step 1: Normalize certificate data into deterministic JSON
     norm_str = normalize_cert_data(cert_data)
-    print(f"\n[*] Chuoi JSON chuan hoa: {norm_str}")
+    print(f"\n[*] Deterministic JSON string: {norm_str}")
 
-    # Buoc 2: Ky bang RSA-PSS + SHA-256
+    # Step 2: Sign with RSA-PSS (SHA-256)
     t0 = time.perf_counter()
     sig_b64 = sign_data(priv_pem, norm_str)
     sign_ms = (time.perf_counter() - t0) * 1000
-    print(f"[*] Da ky RSA-PSS ({sign_ms:.2f} ms). Do dai chu ky Base64: {len(sig_b64)} ky tu")
+    print(f"[*] Signed with RSA-PSS ({sign_ms:.2f} ms). Base64 signature length: {len(sig_b64)} chars")
 
-    # Buoc 3: Dong goi va tao QR Code
+    # Step 3: Pack payload and generate QR code
     payload = pack_qr_payload(cert_data, sig_b64, use_compression=use_comp)
     qr_img, qr_ver = create_qr_image(payload)
     qr_img.save(out_file)
 
-    print(f"[+] Da luu anh QR tai: {out_file} (Payload: {len(payload)} bytes | QR Version: {qr_ver})")
+    print(f"[+] Saved QR code image to: {out_file} (Payload: {len(payload)} bytes | QR Version: {qr_ver})")
 
 
 def menu_verify_qr():
-    print("\n--- 3. QUET ANH QR VA XAC MINH CHU KY ---")
-    print("Goi y cac file co san trong sample_qrs/:")
-    print("  - sample_qrs/qr_valid.png          (QR hop le)")
-    print("  - sample_qrs/qr_tampered_data.png  (QR bi sua ten)")
-    print("  - sample_qrs/qr_tampered_sig.png   (QR bi sua chu ky)")
+    print("\n--- 3. SCAN QR CODE AND VERIFY DIGITAL SIGNATURE ---")
+    print("Available sample files in sample_qrs/:")
+    print("  - sample_qrs/qr_valid.png          (Authentic valid QR)")
+    print("  - sample_qrs/qr_tampered_data.png  (QR with tampered holder name)")
+    print("  - sample_qrs/qr_tampered_sig.png   (QR with corrupted signature)")
 
-    qr_path = input("Nhap duong dan file anh QR [mac dinh: sample_qrs/qr_valid.png]: ").strip()
+    qr_path = input("Enter QR image path [default: sample_qrs/qr_valid.png]: ").strip()
     if not qr_path:
         qr_path = "sample_qrs/qr_valid.png"
 
-    pub_path = input(f"Nhap duong dan Public Key [mac dinh: {PUB_KEY_PATH}]: ").strip()
+    pub_path = input(f"Enter Public Key path [default: {PUB_KEY_PATH}]: ").strip()
     if not pub_path:
         pub_path = PUB_KEY_PATH
 
     if not os.path.exists(qr_path):
-        print(f"[-] Loi: Khong tim thay file anh '{qr_path}'")
+        print(f"[-] Error: Image file '{qr_path}' not found.")
         return
     if not os.path.exists(pub_path):
-        print(f"[-] Loi: Khong tim thay file khoa '{pub_path}'")
+        print(f"[-] Error: Public key file '{pub_path}' not found.")
         return
 
     decoded_text = decode_qr_file(qr_path)
     if not decoded_text:
-        print("[-] Loi: Khong doc duoc ma QR tu anh nay (anh hong hoac sai dinh dang).")
+        print("[-] Error: Unable to decode QR code from image (corrupted image or unsupported format).")
         return
 
     try:
@@ -125,11 +125,11 @@ def menu_verify_qr():
         sig_b64 = payload_obj["sig"]
         kid = payload_obj.get("kid", "N/A")
 
-        print("\n[*] Thong tin doc duoc tu ma QR:")
-        print(f"    - Ho va ten     : {cert_dict.get('name')}")
-        print(f"    - Ma chung nhan : {cert_dict.get('cert_id')}")
-        print(f"    - Ngay cap      : {cert_dict.get('issue_date')}")
-        print(f"    - Key ID        : {kid}")
+        print("\n[*] Decoded QR Certificate Payload:")
+        print(f"    - Holder Name    : {cert_dict.get('name')}")
+        print(f"    - Certificate ID : {cert_dict.get('cert_id')}")
+        print(f"    - Issue Date     : {cert_dict.get('issue_date')}")
+        print(f"    - Key ID         : {kid}")
 
         pub_pem = load_key(pub_path)
         norm_data = normalize_cert_data(cert_dict)
@@ -139,38 +139,38 @@ def menu_verify_qr():
         ver_ms = (time.perf_counter() - t0) * 1000
 
         if is_valid:
-            print(f"\n==> KET QUA: VALID SIGNATURE (Chu ky hop le - Xac minh trong {ver_ms:.3f} ms)")
+            print(f"\n==> RESULT: VALID SIGNATURE (Verification passed in {ver_ms:.3f} ms)")
         else:
-            print(f"\n==> KET QUA: INVALID SIGNATURE (Chu ky KHONG hop le - Du lieu bi sua hoac sai khoa!)")
+            print(f"\n==> RESULT: INVALID SIGNATURE (Verification failed: data tampered or wrong public key!)")
     except Exception as e:
-        print(f"[-] Loi dinh dang du lieu trong QR: {e}")
+        print(f"[-] Error parsing QR payload: {e}")
 
 
 def menu_tamper_demo():
-    print("\n--- 4. THU NGHIEM SUA DU LIEU SAU KHI KY (TAMPERING DEMO) ---")
-    qr_path = input("Nhap file QR hop le de thu sua [mac dinh: sample_qrs/qr_valid.png]: ").strip()
+    print("\n--- 4. TAMPER CERTIFICATE DATA (FORGERY DETECTION DEMO) ---")
+    qr_path = input("Enter authentic QR image path to tamper [default: sample_qrs/qr_valid.png]: ").strip()
     if not qr_path:
         qr_path = "sample_qrs/qr_valid.png"
 
     decoded_text = decode_qr_file(qr_path)
     if not decoded_text:
-        print("[-] Khong doc duoc file QR.")
+        print("[-] Error: Unable to read QR image file.")
         return
 
     payload_obj = unpack_qr_payload(decoded_text)
     cert_dict = payload_obj["data"]
     sig_b64 = payload_obj["sig"]
 
-    print(f"[*] Du lieu goc trong QR: {cert_dict}")
-    fake_name = input("Nhap ten gia mao muon sua thanh [mac dinh: Le Van Fake]: ").strip() or "Le Van Fake"
+    print(f"[*] Original data from QR: {cert_dict}")
+    fake_name = input("Enter fraudulent name to replace [default: Mallory (Attacker)]: ").strip() or "Mallory (Attacker)"
     cert_dict["name"] = fake_name
 
     norm_tampered = normalize_cert_data(cert_dict)
     pub_pem = load_key(PUB_KEY_PATH)
 
     is_valid = verify_signature(pub_pem, norm_tampered, sig_b64)
-    print(f"[*] Du lieu sau khi bi sua: {norm_tampered}")
-    print(f"==> KET QUA XAC MINH VOI CHU KY CU: {'VALID SIGNATURE' if is_valid else 'INVALID SIGNATURE (Phat hien gia mao!)'}")
+    print(f"[*] Tampered data string: {norm_tampered}")
+    print(f"==> VERIFICATION WITH ORIGINAL SIGNATURE: {'VALID SIGNATURE' if is_valid else 'INVALID SIGNATURE (Tampering detected!)'}")
 
 
 def main():
@@ -178,17 +178,17 @@ def main():
 
     while True:
         print("\n==============================================================")
-        print("   HE THONG XAC MINH CHUNG NHAN BANG MA QR (RSA-PSS + SHA256)")
+        print("   QR DIGITAL CERTIFICATE VERIFICATION SYSTEM (RSA-PSS)")
         print("==============================================================")
-        print("1. Tao cap khoa RSA moi (1024 / 2048 / 3072 bit)")
-        print("2. Nhap thong tin chung nhan, ky so va xuat anh QR")
-        print("3. Quet anh QR va xac minh chu ky")
-        print("4. Thu nghiem sua du lieu sau khi ky (Demo phat hien gia mao)")
-        print("5. Chay tu dong 5 Test Cases + Demo diem yeu Textbook RSA + Benchmark")
-        print("0. Thoat chuong trinh")
+        print("1. Generate new RSA key pair (1024 / 2048 / 3072 bit)")
+        print("2. Issue certificate, sign with RSA-PSS, and generate QR code")
+        print("3. Scan QR code image and verify digital signature")
+        print("4. Tamper certificate data (Demonstrate forgery detection)")
+        print("5. Run automated test suite (5 Test Cases + Textbook RSA + Benchmark)")
+        print("0. Exit")
         print("--------------------------------------------------------------")
 
-        choice = input("Chon chuc nang (0-5): ").strip()
+        choice = input("Select an option (0-5): ").strip()
 
         if choice == "1":
             menu_generate_keys()
@@ -202,10 +202,10 @@ def main():
             print()
             run_tests.main()
         elif choice == "0":
-            print("Da thoat chuong trinh.")
+            print("Exiting application. Goodbye!")
             break
         else:
-            print("Lua chon khong hop le, vui long nhap tu 0 den 5.")
+            print("Invalid choice, please select between 0 and 5.")
 
 
 if __name__ == "__main__":
